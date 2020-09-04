@@ -6,7 +6,7 @@ Students enter their USNs in the chat in the format "1RN1NXXNNN" where X is any 
 
 From this file, the script finds the USNs and maintains only unique usns ignoring any other message.
 
-In my Google Sheet my header row contains "USN", "Names", and dates. 
+In my Google Sheet my header row contains "USN", "Names", and dates. Example excel sheet given.
 
 To automate the google sheet using python refer to this tutorial: https://techwithtim.net/tutorials/google-sheets-python-api-tutorial/
 
