@@ -50,5 +50,5 @@ for dicts in records:
     marking.append(dicts[today])
 
 ### update the attendance in google sheet
-for i in range(2, 65):
+for i in range(2, len(records)+1):
     sheet.update_cell(i, cell.col, marking[i-2])
