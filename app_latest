@@ -1,0 +1,95 @@
+import re
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import date, datetime, timedelta
+from pprint import pprint
+
+
+def last_row(worksheet):
+    str_list = list(filter(None, worksheet.col_values(1)))
+    return len(str_list)
+
+
+def get_chatfile(filename):
+    chatfile = open(filename)
+    return chatfile.read()
+
+
+def get_client():
+    scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
+    return gspread.authorize(creds)
+
+###today's and previous class's date
+def dates(sheet):
+    today = datetime.today().strftime('%d-%m-%Y')
+    firstRow = len(sheet.row_values(1))
+    today_cell = firstRow + 1
+    sheet.update_cell(1, today_cell, today)
+    prev_class = sheet.cell(1, today_cell - 1).value
+    return prev_class,today
+
+
+def find_usns_in_chat():
+
+    usn_regx = re.compile(r'(1(8|7|6|5)[a-zA-Z]{2}\d\d\d)')
+    mo = usn_regx.findall(chatContent)
+
+    #####get usns as unique list
+    usn_list = []
+    for no in mo:
+    usn_list.append(no[0])
+    usns = [x.lower() for x in usns] #USNs to lower case
+    check = set(usns)
+    return list(check)
+
+
+
+client = get_client()
+sheet = client.open("Attendance_Reg PE_7A").sheet1
+chatContent = get_chatfile(r"your file location")
+usns = find_usns_in_chat()
+prev_class,today = dates(sheet)
+####get all details of file as list of dicts
+records = sheet.get_all_records(empty2zero=True)
+for dicts in records:
+    dicts[today] = int(dicts[today]) #make all as ints
+    dicts['USN'] = dicts['USN'].lower() #make usns to lower case
+
+### updating USN in the records list
+for dicts in records:
+    usn1 = dicts['USN']
+    for uni in usns:
+        if uni == usn1[3:]:
+            dicts[today] = dicts[prev_class]+1
+            break
+        dicts[today] = dicts[prev_class]
+
+cell = sheet.find(today) #find cell with today's date so column can be updated
+marking = [] #list of attendance for today eg - [1,1,0,1...]
+for dicts in records:
+    marking.append(dicts[today])
+### update the attendance in google sheet
+for i in range(2, last_row(sheet)+1):
+    sheet.update_cell(i, cell.col, marking[i-2])
+    
+
+###marking the absentees
+sheet2 = client.open("Attendance_Reg PE_7A").get_worksheet(1)
+prev_class,today = dates(sheet2)
+today_cell1 = sheet.find(today)
+today_att = sheet.col_values(today_cell1.col)
+firstRow = len(sheet2.row_values(1))
+today_cell = firstRow + 1
+del today_att[0]
+prev_class_att = sheet.col_values(today_cell1.col-1)
+del prev_class_att[0]
+records = sheet.get_all_records(empty2zero=True)
+absentees=[]
+for i in range(2, last_row(sheet)+1):
+    if today_att[i-2] == prev_class_att[i-2]:
+        absentees.append(records[i-2]['USN'])
+for i in range(2,len(absentees)+2):
+    sheet2.update_cell(i, today_cell, absentees[i-2])
+
+
