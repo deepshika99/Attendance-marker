@@ -1,4 +1,6 @@
 # Attendance-marker
+This was a python program I created during my final year of B.E when we had online classes and teachers would ask us to enter our USN(University Serial Number) in the chat of our zoom classes. 
+I was inspired to do it after doing this course https://www.udemy.com/course/automate ! 
 
 This code is used for maintaining attendance in a class.
 
